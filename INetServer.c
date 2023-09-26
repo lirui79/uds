@@ -26,8 +26,9 @@ typedef struct INetConItem{
 } INetConItem;
 
 typedef struct INetDataItem {
-	struct INetConItem   *item;
-	struct list_head      entry;
+    struct INetConnect  * iconn;
+    struct list_head      entry;
+    unsigned long         procid;
 	unsigned char         buffer[4096];
 	int                   bufsize;
 } INetDataItem;
@@ -188,9 +189,10 @@ static void *INetServer_threadRecv(void *argv) {
                 	continue;
                 }
                 ditem = (struct INetDataItem*)malloc(sizeof(struct INetDataItem));
-                ditem->item    = citem;
+                ditem->iconn   = citem->iconn;
+                ditem->procid  = citem->procid;
                 ditem->bufsize = citem->iconn->read(citem->iconn, ditem->buffer, readSize);
-                printf("read %d %d\n", ditem->bufsize, readSize);
+                printf("read %d %s:%d %d\n", citem->iconn->socketID(citem->iconn), citem->iconn->address(citem->iconn), ditem->bufsize, readSize);
                 dlock->lock(dlock);
 	    	    list_add_tail(&ditem->entry, ldata);
                 dlock->unlock(dlock);
@@ -246,9 +248,9 @@ static void *INetServer_threadProc(void *argv) {
         while(node != ldata) {
         	ditem = list_entry(node, INetDataItem, entry);
         	//process
-        	printf("process: %s %d\n", ditem->buffer, ditem->bufsize);
+        	printf("process %d %s:%s %d\n", ditem->iconn->socketID(ditem->iconn), ditem->iconn->address(ditem->iconn), ditem->buffer, ditem->bufsize);
             bufsize = sprintf(buffer, "back to client:%s",ditem->buffer);
-        	ditem->item->iconn->write(ditem->item->iconn, buffer, bufsize);
+        	ditem->iconn->write(ditem->iconn, buffer, bufsize);
         	dlock->lock(dlock);
         	list_del(node);
         	node = next;

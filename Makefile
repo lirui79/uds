@@ -1,5 +1,5 @@
 
-all:server client
+all:server client libwebnet.so demo-server demo-client
 
 list.o:
 	gcc -c list.c -I./ -o list.o
@@ -26,5 +26,12 @@ server:server.c
 client:client.c
 	gcc -g list.c IMutex.c INetConnect.c INetClient.c client.c -I./ -lpthread -o client
 
+demo-server:server.c
+	gcc -g server.c -L. -lwebnet -I./ -lpthread -o demo-server
+
+demo-client:client.c
+	gcc -g client.c -L. -lwebnet  -I./ -lpthread -o demo-client
+
+
 clean:
-	rm *.o *.so server client
+	rm *.o *.so *server *client
