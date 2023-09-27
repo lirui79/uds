@@ -238,25 +238,22 @@ static void *INetServer_threadProc(void *argv) {
         ldata = &server->conn_data;
         node  = ldata->next;
         next  = node->next;
-    	dlock->unlock(dlock);
     	if (node == ldata) {
+            dlock->unlock(dlock);
 	        mutex->lock(mutex);
 	        code = event->wait(event, mutex, 1000);
 	        mutex->unlock(mutex);
 	        continue;
-	    }
-        while(node != ldata) {
-        	ditem = list_entry(node, INetDataItem, entry);
-        	//process
-        	printf("process %d %s:%s %d\n", ditem->iconn->socketID(ditem->iconn), ditem->iconn->address(ditem->iconn), ditem->buffer, ditem->bufsize);
-            bufsize = sprintf(buffer, "back to client:%s",ditem->buffer);
-        	ditem->iconn->write(ditem->iconn, buffer, bufsize);
-        	dlock->lock(dlock);
-        	list_del(node);
-        	node = next;
+	    } else {
+            list_del(node);
+            ditem = list_entry(node, INetDataItem, entry);
+            node = next;
             next = node->next;
-			dlock->unlock(dlock);
-			free(ditem);
+            dlock->unlock(dlock);
+            printf("process %d %s:%s %d\n", ditem->iconn->socketID(ditem->iconn), ditem->iconn->address(ditem->iconn), ditem->buffer, ditem->bufsize);
+            bufsize = sprintf(buffer, "back to client:%s",ditem->buffer);
+            ditem->iconn->write(ditem->iconn, buffer, bufsize);
+            free(ditem);
         }
     }
 

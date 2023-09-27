@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
         size = sprintf(data, "hello world client->server send times:%d", send++);
         size = client->write(client, data, size, 2000);
         printf("recv from server %d:%s\n", size, data);
-    	sleep(1);
+    	//sleep(1);
     }
     client->exit(client);
     client->free(client);
