@@ -45,6 +45,7 @@ int main(int argc, char *argv[]) {
             sleep(2);
         } else {
            printf("recv from server %d:%s\n", size, data);
+           sleep(1);
         }
     }
     client->exit(client);
