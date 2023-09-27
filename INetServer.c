@@ -128,10 +128,10 @@ static void *INetServer_threadRecv(void *argv) {
     struct INetDataItem *ditem     = NULL;
     unsigned int status = 0;
     unsigned long   procid = 0;
-    int code = -1, sckID = -1, i = 0, readSize = 0, evsize = 1024;
+    int code = -1, sckID = -1, i = 0, readSize = 0, evsize = 1024, ewsize = 0;
     struct epoll_event   *events   = NULL;
 
-    server->epollfd = epoll_create(1024);
+    server->epollfd = epoll_create(evsize);
     addfd(server->epollfd, server->sckID, NULL);
     events = (struct epoll_event   *)malloc(evsize * sizeof(struct epoll_event));
     memset(events, 0, evsize * sizeof(struct epoll_event));
@@ -142,13 +142,13 @@ static void *INetServer_threadRecv(void *argv) {
     		break;
     	}
 
-    	code = epoll_wait(server->epollfd, events, evsize, 1000);
-    	if (code < 0) {
-    		printf("epoll_wait error %d\n", code);
+    	ewsize = epoll_wait(server->epollfd, events, evsize, 1000);
+    	if (ewsize < 0) {
+    		printf("epoll_wait error %d\n", ewsize);
     		break;
     	}
 
-        for (i = 0; i < code; ++i) {
+        for (i = 0; i < ewsize; ++i) {
         	if (events[i].data.fd == server->sckID) {
 			    struct sockaddr_in remote_addr;
 			    socklen_t sock_len = sizeof(struct sockaddr_un);
@@ -189,6 +189,7 @@ static void *INetServer_threadRecv(void *argv) {
                 	continue;
                 }
                 ditem = (struct INetDataItem*)malloc(sizeof(struct INetDataItem));
+                memset(ditem, 0, sizeof(struct INetDataItem));
                 ditem->iconn   = citem->iconn;
                 ditem->procid  = citem->procid;
                 ditem->bufsize = citem->iconn->read(citem->iconn, ditem->buffer, readSize);
@@ -213,6 +214,9 @@ static void *INetServer_threadRecv(void *argv) {
     close(server->epollfd);
     server->epollfd = -1;
     close(server->sckID);
+    if (events != NULL)
+        free(events);
+    events = NULL;
     atomic_init(&(server->status), 0);
     return NULL;
 }
@@ -250,6 +254,7 @@ static void *INetServer_threadProc(void *argv) {
             node = next;
             next = node->next;
             dlock->unlock(dlock);
+            memset(buffer, 0, 4096);
             printf("process %d %s:%s %d\n", ditem->iconn->socketID(ditem->iconn), ditem->iconn->address(ditem->iconn), ditem->buffer, ditem->bufsize);
             bufsize = sprintf(buffer, "back to client:%s",ditem->buffer);
             ditem->iconn->write(ditem->iconn, buffer, bufsize);

@@ -19,7 +19,7 @@ void HandleSignal(int signo) {
 int main(int argc, char *argv[]) {
 	struct INetClient* client = NULL;
 	unsigned int sign = 0;
-	char data[256] = "send to server";
+	char data[4096] = {0};
     int size = 0, send = 0;
     if (argc < 2) {
         printf("please: ./client /tmp/vpu-test-0");
@@ -37,10 +37,15 @@ int main(int argc, char *argv[]) {
     	if (sign > 0) {
     		break;
     	}
+        memset(data, 0, 4096);
         size = sprintf(data, "hello world client->server send times:%d", send++);
-        size = client->write(client, data, size, 2000);
-        printf("recv from server %d:%s\n", size, data);
-    	//sleep(1);
+        size = client->write(client, data, size, 5000);
+        if (size <= 0) {
+            printf("client write to server error %d\n", size);
+            sleep(2);
+        } else {
+           printf("recv from server %d:%s\n", size, data);
+        }
     }
     client->exit(client);
     client->free(client);
